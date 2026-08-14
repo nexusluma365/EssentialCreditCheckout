@@ -25,7 +25,7 @@ R2_FILE_KEY_PLAYBOOK=ESSENTIAL CREDIT REPAIR PLAYBOOK.zip
 R2_FILE_KEY1=20 DEssential Dispute Letter Templates.zip
 ```
 
-The live publishable key has a fallback in `netlify/functions/stripe-config.js` so the card field can load in production. `STRIPE_SECRET_KEY` is still required on Netlify before Stripe can create or confirm payments. In production, an old test `STRIPE_PUBLISHABLE_KEY` is ignored and the live fallback is used unless Netlify provides a live `pk_live_` value.
+The test publishable key has a fallback in `netlify/functions/stripe-config.js` so the card field can load for test checkout. `STRIPE_SECRET_KEY` is still required on Netlify before Stripe can create or confirm payments. To test payments end to end, use the matching `sk_test_` secret key in Netlify.
 
 For local Stripe test checkout, `.env` must contain both keys:
 
@@ -38,11 +38,9 @@ Use Stripe test card `4242 4242 4242 4242`, any future expiration date, any CVC,
 
 The funnel flow is:
 
-1. Lead capture collects the visitor email.
-2. Sales step presents The Essential Credit Playbook offer.
-3. Regular checkout opens with The Essential Credit Playbook checkbox checked by default and charges `$27`.
-4. If the visitor unchecks the Playbook option, checkout switches to the 20 Essential Letter Templates for `$7`.
-5. The final confirmation screen reveals the verified purchased download.
+1. Checkout opens first with The Essential Credit Playbook checkbox checked by default and charges `$27`.
+2. If the visitor unchecks the Playbook option, checkout switches to the 20 Essential Letter Templates for `$7`.
+3. The final confirmation screen reveals the verified purchased download.
 
 The frontend also sends tracking events to Google Analytics and the configured Google Apps Script webhook in `index.html`.
 

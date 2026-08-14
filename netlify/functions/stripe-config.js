@@ -10,13 +10,9 @@ function json(statusCode, body) {
 }
 
 exports.handler = async () => {
-  const fallbackLivePublishableKey = 'pk_live_51TeycBPJOp8s8XsSjWLZD8n3JweuczqhYYgoJKLkiNfogQUnveNxlB3YMOM8GPrBAd8YCWYNXxVv4vKdgcoftxoR00IsTaLRDD';
   const fallbackTestPublishableKey = 'pk_test_51TeycBPJOp8s8XsSvgsYs2KtFZt1F2fUg9W32bxS2rDcORtp4F89PUj54Dz1WJbhPS1i8vnouVLeSiUX9cWfzp4v00RLV2KMcT';
   const envPublishableKey = process.env.STRIPE_PUBLISHABLE_KEY || '';
-  const isProduction = process.env.CONTEXT === 'production' || process.env.NODE_ENV === 'production';
-  const publishableKey = isProduction && !envPublishableKey.startsWith('pk_live_')
-    ? fallbackLivePublishableKey
-    : envPublishableKey || fallbackTestPublishableKey;
+  const publishableKey = envPublishableKey || fallbackTestPublishableKey;
 
   if (!publishableKey) {
     return json(500, {
