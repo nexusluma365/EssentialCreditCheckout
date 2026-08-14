@@ -4962,12 +4962,12 @@ button.btn-accent.lt-submit#submit-payment:hover {
 </head>
 <body>
 <div class="page-shell">
-<div class="funnel-version">Funnel v5 Lead > Sales > Checkout</div>
+<div class="funnel-version">Funnel v8 Checkout</div>
 
 <!-- ════════════════════════════════
      STEP 1 — LEAD CAPTURE
 ════════════════════════════════ -->
-<div class="funnel-page active" id="page1">
+<div class="funnel-page" id="page1">
   <section class="lead-step">
     <div class="lead-inner">
       <div class="lead-hero">
@@ -5184,7 +5184,7 @@ button.btn-accent.lt-submit#submit-payment:hover {
 <!-- ════════════════════════════════
      STEP 3 — REGULAR CHECKOUT
 ════════════════════════════════ -->
-<div class="funnel-page" id="page2">
+<div class="funnel-page active" id="page2">
 
 <section class="lt-checkout-page" aria-label="The Essential Credit Playbook checkout">
   <div class="lt-hero">
@@ -5209,6 +5209,11 @@ button.btn-accent.lt-submit#submit-payment:hover {
       <p class="lt-checkout-intro">You're one step away from getting The Essential Credit Playbook. Complete your secure checkout below.</p>
 
       <form class="lt-inline-payment-form" id="payment-form">
+        <div class="checkout-field lt-inline-card-field">
+          <label for="checkout-email">Email address</label>
+          <input type="email" id="checkout-email" autocomplete="email" placeholder="you@example.com" required>
+        </div>
+
         <div class="checkout-field lt-inline-card-field">
           <label>Credit card information</label>
           <div class="checkout-card-grid">
@@ -5351,6 +5356,7 @@ button.btn-accent.lt-submit#submit-payment:hover {
   const submitButton = document.querySelector('#submit-payment');
   const paymentMessage = document.querySelector('#payment-message');
   const checkoutCardName = document.querySelector('#checkout-card-name');
+  const checkoutEmail = document.querySelector('#checkout-email');
   const checkoutPostalCode = document.querySelector('#checkout-card-zip');
   const checkoutFinalSale = document.querySelector('#checkout-final-sale');
   const downloadMessage = document.querySelector('#download-message');
@@ -5483,6 +5489,10 @@ button.btn-accent.lt-submit#submit-payment:hover {
       email: leadData.email || sessionStorage.getItem('funnel_email') || '',
       phone: leadData.phone || sessionStorage.getItem('funnel_phone') || ''
     };
+  }
+
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
   }
 
   function pageTrackingPayload() {
@@ -5643,7 +5653,7 @@ button.btn-accent.lt-submit#submit-payment:hover {
   function showPage(step) {
     const previewStep = new URLSearchParams(window.location.search).get('preview_step');
     const checkoutUnlocked = sessionStorage.getItem('checkout_unlocked') === 'yes';
-    if (step === 2 && previewStep !== '2' && !checkoutUnlocked) {
+    if (step === 2 && previewStep !== '2' && !checkoutUnlocked && !document.querySelector('#page2')?.classList.contains('active')) {
       step = 3;
     }
 
@@ -6113,6 +6123,14 @@ button.btn-accent.lt-submit#submit-payment:hover {
     }
 
     if (!shouldCreateIntent) return;
+    const checkoutEmailValue = (checkoutEmail?.value || '').trim();
+    if (checkoutEmailValue) {
+      leadData = {
+        ...leadData,
+        email: checkoutEmailValue
+      };
+      sessionStorage.setItem('funnel_email', checkoutEmailValue);
+    }
 
     // PaymentIntent logic placeholder: production should map productKey/bump to
     // Stripe Price IDs server-side, create/confirm the PaymentIntent server-side,
@@ -6424,6 +6442,32 @@ button.btn-accent.lt-submit#submit-payment:hover {
     event.preventDefault();
     clearMessage();
 
+    const enteredEmail = (checkoutEmail?.value || leadData.email || sessionStorage.getItem('funnel_email') || '').trim();
+    if (!isValidEmail(enteredEmail)) {
+      showMessage('Please enter a valid email address.');
+      checkoutEmail?.focus();
+      return;
+    }
+
+    if (checkoutFinalSale && !checkoutFinalSale.checked) {
+      showMessage('Please confirm that you understand all sales are final.');
+      checkoutFinalSale.focus();
+      return;
+    }
+
+    const postalCode = (checkoutPostalCode?.value || '').trim();
+    if (!postalCode) {
+      showMessage('Please enter your billing ZIP code.');
+      checkoutPostalCode?.focus();
+      return;
+    }
+
+    leadData = {
+      ...leadData,
+      email: enteredEmail
+    };
+    sessionStorage.setItem('funnel_email', enteredEmail);
+
     if (!stripe || !cardNumberElement || !clientSecret) {
       try {
         await initializeStripeCheckout();
@@ -6438,20 +6482,8 @@ button.btn-accent.lt-submit#submit-payment:hover {
       return;
     }
 
-    if (checkoutFinalSale && !checkoutFinalSale.checked) {
-      showMessage('Please confirm that you understand all sales are final.');
-      checkoutFinalSale.focus();
-      return;
-    }
-
     const cardName = (leadData.name || sessionStorage.getItem('funnel_name') || '').trim();
-    const cardEmail = leadData.email || sessionStorage.getItem('funnel_email') || undefined;
-    const postalCode = (checkoutPostalCode?.value || '').trim();
-    if (!postalCode) {
-      showMessage('Please enter your billing ZIP code.');
-      checkoutPostalCode?.focus();
-      return;
-    }
+    const cardEmail = enteredEmail;
 
     submitButton.disabled = true;
     submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Payment...';
@@ -6567,6 +6599,9 @@ button.btn-accent.lt-submit#submit-payment:hover {
   });
 
   loadPurchaseState();
+  if (checkoutEmail && sessionStorage.getItem('funnel_email')) {
+    checkoutEmail.value = sessionStorage.getItem('funnel_email');
+  }
   const previewStep = new URLSearchParams(window.location.search).get('preview_step');
   if (['1', '2', '3', '4'].includes(previewStep)) {
     showPage(Number(previewStep));
